@@ -1,6 +1,11 @@
+import React, { useState } from 'react';
 import { useQuery } from 'react-query';
-import { Card, Row, Col } from 'antd';
+import { Row, Col, Drawer, FloatButton } from 'antd';
 import { Wrapper } from './App.styles';
+import Cart from './components/Cart/Cart';
+import Item from './components/Item/Item';
+
+
 
 
 
@@ -18,17 +23,14 @@ import { Wrapper } from './App.styles';
 // },
 
 
-type CartItemType = {
+export type CartItemType = {
   id: number;
   title: string;
   price: number;
   description: string;
   category: string;
   image: string;
-  rating: {
-    rate: number;
-    count: number;
-  }
+  amount: number;
 }
 
 
@@ -40,35 +42,78 @@ const fetchProducts = async (): Promise<CartItemType[]> => {
 }
 
 
-function App() {
+const App: React.FC = () => {
+  const [openCart, setOpenCart] = useState<boolean>(true);
+  const [cartItems, setCartItems] = useState([] as CartItemType[]);
+
+  let { data: products, isLoading, error } = useQuery<CartItemType[]>('products', fetchProducts);
 
 
-  let { data: products, isLoading, error } = useQuery('products', fetchProducts);
-  console.log('products: ', products);
+  const handleAddToCart = (product: CartItemType) => {
+    setCartItems((prev) => {
+      let isItemInCart = prev.find((item) => item.id === product.id);
+
+      if (isItemInCart) {
+        return prev.map((item) => {
+          if (item.id === product.id) {
+            return {
+              ...item,
+              amount: item.amount + 1
+            }
+          }
+          return item;
+        })
+      }
+
+      return [...prev, { ...product, amount: 1 }]
+    })
+  }
+
+  const handleRemoveFromCart = (id: number) => {
+    setCartItems((prev) => {
+      return prev.reduce((acc, item) => {
+        if (item.id === id) {
+          if (item.amount === 1) return acc;
+          return [...acc, { ...item, amount: item.amount - 1 }]
+        } else {
+          return [...acc, item];
+        }
+      }, [] as CartItemType[])
+    })
+  }
 
 
   if (isLoading) return <div>Loading...</div>;
-
+  if (error) return <div>Something went wrong...</div>;
 
   return (
     <Wrapper>
       <h1>App</h1>
+      <FloatButton onClick={() => setOpenCart(true)}></FloatButton>
       <Row>
         {
           products?.map((product) => {
             return (
               <Col key={product.id} style={{ margin: 10 }}>
-                <Card style={{ border: 2, borderColor: 'black' }}>
-                  <div>
-                    <img src={product.image} alt={product.title} width={100} />
-                  </div>
-                  <footer>{product.title}</footer>
-                </Card>
+                <Item product={product} handleAddToCart={handleAddToCart}></Item>
               </Col>
             )
           })
         }
       </Row>
+      
+      <Drawer
+        open={openCart}
+        title="Shopping Cart"
+        placement="right"
+        onClose={() => setOpenCart(false)}
+      >
+        <Cart
+          cartItems={cartItems}
+          handleAddToCart={handleAddToCart}
+          handleRemoveFromCart={handleRemoveFromCart}
+        ></Cart>
+      </Drawer>
     </Wrapper>
   );
 }
