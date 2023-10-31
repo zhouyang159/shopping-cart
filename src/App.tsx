@@ -43,7 +43,7 @@ const fetchProducts = async (): Promise<CartItemType[]> => {
 
 
 const App: React.FC = () => {
-  const [openCart, setOpenCart] = useState<boolean>(true);
+  const [openCart, setOpenCart] = useState<boolean>(false);
   const [cartItems, setCartItems] = useState([] as CartItemType[]);
 
   let { data: products, isLoading, error } = useQuery<CartItemType[]>('products', fetchProducts);
